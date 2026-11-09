@@ -1,0 +1,30 @@
+{
+  "name": "qflarebot-plugin-schedule",
+  "version": "0.1.0",
+  "description": "导入 iCalendar 课表，查询课程并发送 QQ 单聊提醒",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "qflarebot-plugin"
+  ],
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "qqbot-plugin build",
+    "sync": "npm run build && node -e \"require('node:fs').copyFileSync('dist/manifest.json','manifest.json')\"",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ical.js": "2.2.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260702.1",
+    "@qqbot/plugin-cli": "file:../qqbot-workers/packages/plugin-cli",
+    "@qqbot/sdk": "file:../qqbot-workers/packages/sdk",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "schedule",
+  "version": "0.1.0",
+  "apiVersion": 5,
+  "permissions": [
+    "admin",
+    "db",
+    "proactive"
+  ],
+  "depends": {},
+  "conflicts": [],
+  "commands": [
+    {
+      "name": "课表",
+      "aliases": [
+        "schedule"
+      ],
+      "scenes": [
+        "c2c"
+      ],
+      "description": "查询课程与设置提醒",
+      "usage": "/课表 [今日|明日|提醒 开启|提醒 关闭|提醒 状态]"
+    }
+  ],
+  "regex": [],
+  "events": [],
+  "buttons": [],
+  "cron": [
+    {
+      "name": "daily",
+      "cron": "* * * * *"
+    }
+  ],
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/ui/",
+      "auth": "admin"
+    },
+    {
+      "method": "GET",
+      "path": "/api/status",
+      "auth": "admin"
+    },
+    {
+      "method": "POST",
+      "path": "/api/import",
+      "auth": "admin"
+    }
+  ],
+  "hasMiddleware": false,
+  "services": [],
+  "durableObjects": [],
+  "displayName": "课程表",
+  "description": "导入 ICS 课表，在 QQ 单聊查询课程与接收每日提醒",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "reminderTime": {
+        "type": "string",
+        "title": "每日提醒时间（北京时间）",
+        "default": "07:00",
+        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+        "description": "24 小时格式，例如 07:00。有课时发送当天的课程汇总。"
+      }
+    }
+  },
+  "defaultConfig": {
+    "reminderTime": "07:00"
+  },
+  "ui": {
+    "path": "/ui/",
+    "title": "课程表"
+  }
+}
