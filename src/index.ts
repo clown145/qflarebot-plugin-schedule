@@ -1,5 +1,5 @@
 import { definePlugin } from '@qqbot/sdk'
-import type { CronInput, PluginDB } from '@qqbot/sdk'
+import type { CronInput, OutgoingMessage, PluginDB } from '@qqbot/sdk'
 import { DAY_MS, localDateTime, readCalendarFile } from './calendar-input.js'
 import type { ClassEvent } from './calendar-input.js'
 import { PAGE_HTML } from './page.js'
@@ -38,24 +38,45 @@ function classesOn(payload: string, day: string): ClassEvent[] {
   return (JSON.parse(payload) as ClassEvent[]).filter(event => event.start >= start && event.start < end)
 }
 
-function agenda(heading: string, day: string, events: ClassEvent[]): string {
-  if (!events.length) return `${heading}（${day}）没有课。`
-  const lines = [`${heading}（${day}）`]
-  let bytes = encoder.encode(lines[0]!).length
+function escapeMarkdown(text: string): string {
+  return text.replace(/[\\`*_~\[\]()<>!|#&]/g, '\\$&')
+}
+
+function agenda(heading: string, day: string, events: ClassEvent[]): OutgoingMessage {
+  const date = new Date(`${day}T00:00:00Z`)
+  const weekday = '日一二三四五六'[date.getUTCDay()]
+  const caption = `${day} · 周${weekday} · ${events.length} 次课`
+  const markdown = [`## ${heading}\n\n${caption}`]
+  const plain = [`${heading} · ${caption}`]
+  if (!events.length) {
+    markdown.push('当天没有课。')
+    plain.push('当天没有课。')
+  }
+
+  const omitted = (count: number) => `另有 ${count} 次课，请查看原课表。`
+  const footerBytes = encoder.encode(omitted(events.length)).length + 2
+  let bytes = encoder.encode(markdown[0]!).length
   for (const [index, event] of events.entries()) {
     const start = localDateTime(event.start).slice(11, 16)
     const end = localDateTime(event.end).slice(11, 16)
-    const location = event.location ? ' · ' + event.location.slice(0, 48) : ''
-    const line = `${start}–${end}  ${event.title.slice(0, 48)}${location}`
-    const size = encoder.encode(line).length + 1
-    if (bytes + size > MESSAGE_BYTES) {
-      lines.push(`还有 ${events.length - index} 项，请查看原课表。`)
+    const title = event.title.slice(0, 48)
+    const location = event.location.slice(0, 48)
+    const label = `${start}–${end} · ${title}`
+    const block = `**${escapeMarkdown(label)}**`
+      + (location ? `  \n📍 ${escapeMarkdown(location)}` : '')
+    const size = encoder.encode(block).length + 2
+    const reserve = index === events.length - 1 ? 0 : footerBytes
+    if (bytes + size + reserve > MESSAGE_BYTES) {
+      const footer = omitted(events.length - index)
+      markdown.push(footer)
+      plain.push(footer)
       break
     }
-    lines.push(line)
+    markdown.push(block)
+    plain.push(location ? `${label} · ${location}` : label)
     bytes += size
   }
-  return lines.join('\n')
+  return { markdown: { content: markdown.join('\n\n') }, text: plain.join('\n') }
 }
 
 function summary(events: ClassEvent[]) {
@@ -92,7 +113,7 @@ async function remind({ ctx, scheduledAt }: CronInput<Config>) {
 
   let delivery: 'sent' | 'failed' = 'failed'
   try {
-    const result = await ctx.api.sendMessage({ scene: 'c2c', id: recipient }, agenda('今日课程提醒', day, events))
+    const result = await ctx.api.sendMessage({ scene: 'c2c', id: recipient }, agenda('今日课表提醒', day, events))
     if (result.ok) delivery = 'sent'
     else ctx.logger.warn('QQ 课程提醒发送失败', { status: result.status, code: result.code, traceId: result.traceId })
   } catch {
@@ -164,7 +185,7 @@ export default definePlugin<Config>({
         if (!row.payload) return '还没有导入课表。请在管理面板的「课程表」页面上传 ICS。'
         const tomorrow = command === '明日'
         const day = localDateTime(Date.now() + (tomorrow ? DAY_MS : 0)).slice(0, 10)
-        return agenda(tomorrow ? '明日课程' : '今日课程', day, classesOn(row.payload, day))
+        return agenda(tomorrow ? '明日课表' : '今日课表', day, classesOn(row.payload, day))
       },
     },
   },
