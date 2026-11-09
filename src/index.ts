@@ -133,7 +133,7 @@ export default definePlugin<Config>({
   },
   commands: {
     课表: {
-      aliases: ['schedule'],
+      aliases: ['timetable'],
       scenes: ['c2c'],
       description: '查询课程与设置提醒',
       usage: '/课表 [今日|明日|提醒 开启|提醒 关闭|提醒 状态]',

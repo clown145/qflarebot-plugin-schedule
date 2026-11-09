@@ -1,6 +1,6 @@
 {
   "name": "schedule",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "apiVersion": 5,
   "permissions": [
     "admin",
@@ -13,7 +13,7 @@
     {
       "name": "课表",
       "aliases": [
-        "schedule"
+        "timetable"
       ],
       "scenes": [
         "c2c"
