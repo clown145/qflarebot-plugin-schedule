@@ -1,6 +1,6 @@
 {
   "name": "qflarebot-plugin-schedule",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "导入 iCalendar 课表，查询课程并发送 QQ 单聊提醒",
   "license": "MIT",
   "type": "module",

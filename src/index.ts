@@ -46,37 +46,38 @@ function agenda(heading: string, day: string, events: ClassEvent[]): OutgoingMes
   const date = new Date(`${day}T00:00:00Z`)
   const weekday = '日一二三四五六'[date.getUTCDay()]
   const caption = `${day} · 周${weekday} · ${events.length} 次课`
-  const markdown = [`## ${heading}\n\n${caption}`]
+  const markdown = [`## ${heading}`, '', caption]
   const plain = [`${heading} · ${caption}`]
   if (!events.length) {
-    markdown.push('当天没有课。')
+    markdown.push('', '当天没有课。')
     plain.push('当天没有课。')
+  } else {
+    markdown.push('', '| 时间 | 课程 | 教室 |', '| --- | --- | --- |')
   }
 
   const omitted = (count: number) => `另有 ${count} 次课，请查看原课表。`
   const footerBytes = encoder.encode(omitted(events.length)).length + 2
-  let bytes = encoder.encode(markdown[0]!).length
+  let bytes = encoder.encode(markdown.join('\n')).length
   for (const [index, event] of events.entries()) {
     const start = localDateTime(event.start).slice(11, 16)
     const end = localDateTime(event.end).slice(11, 16)
     const title = event.title.slice(0, 48)
     const location = event.location.slice(0, 48)
-    const label = `${start}–${end} · ${title}`
-    const block = `**${escapeMarkdown(label)}**`
-      + (location ? `  \n📍 ${escapeMarkdown(location)}` : '')
-    const size = encoder.encode(block).length + 2
+    const time = `${start}–${end}`
+    const row = `| ${time} | ${escapeMarkdown(title)} | ${escapeMarkdown(location) || '—'} |`
+    const size = encoder.encode(row).length + 1
     const reserve = index === events.length - 1 ? 0 : footerBytes
     if (bytes + size + reserve > MESSAGE_BYTES) {
       const footer = omitted(events.length - index)
-      markdown.push(footer)
+      markdown.push('', footer)
       plain.push(footer)
       break
     }
-    markdown.push(block)
-    plain.push(location ? `${label} · ${location}` : label)
+    markdown.push(row)
+    plain.push([time, title, location].filter(Boolean).join(' · '))
     bytes += size
   }
-  return { markdown: { content: markdown.join('\n\n') }, text: plain.join('\n') }
+  return { markdown: { content: markdown.join('\n') }, text: plain.join('\n') }
 }
 
 function summary(events: ClassEvent[]) {
